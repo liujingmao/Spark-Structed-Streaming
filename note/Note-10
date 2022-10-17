@@ -1,0 +1,54 @@
+前端框架
+	React Echarts
+
+	安装v12.12.0
+	sudo npm i yarn -g
+	/usr/bin/yarn global add umi
+	npm install
+
+
+
+前后端项目部署
+	前端：
+		工程：user-charts
+		访问地址： hadoop000:8000
+	后端：
+		jar包：imooc-spark-web-0.0.1.jar
+		启动： nohup java -jar imooc-spark-web-0.0.1.jar &
+			Redis: hadoop000  6379
+			HBase: hadoop000  2181	
+
+			修改ip和hostname的映射文件的配置
+			ip pk000
+			ip hadoop000
+		前后端交互地址：
+			http://hadoop000:9528/spark-web
+				Spring Boot + Data + HBase/Redis
+
+
+
+src/config/index.ts 
+	配置前后端交互地址：http://hadoop000:9528/spark-web
+
+
+bar: user-charts/src/pages/bar/index.tsx
+	barchart?code=1234&start=20200828&end=20200829
+
+map：user-charts/src/pages/map/index.tsx
+	mapchart?code=...&...
+
+pie：user-charts/src/pages/pie/index.tsx
+
+前后端工程师：对接好 
+	每个请求的入参，返回值(数据结构)
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,58 @@
+ProcessingTime vs EventTime
+
+12:00:00 数据的真正产生时间 EventTime
+12:01:10 进入Spark的时间   ProcessingTime
+
+
+ip,time,cata,newid
+..,12:00:00,...
+..,12:00:01,...
+..,12:00:02,...
+..,11:55:00,...
+
+
+
+DStream  RDD
+一个业务交给不同的开发人员去实现，可能最终的性能千差万别
+Spark SQL ==> Catalyst
+只要关注业务逻辑
+
+批流一体
+Streaming/Batch
+2014 Google DataFlow
+unbounded/bounded data
+spark.read.format("parquet").load("path")
+
+
+end-to-end
+端到端   input ==> .... ===>output 
+
+
+
+
+
+
+
+
+2021-10-01 12:02:00,cat
+2021-10-01 12:02:00,dog
+2021-10-01 12:03:00,dog
+2021-10-01 12:03:00,dog
+2021-10-01 12:07:00,owl
+2021-10-01 12:07:00,cat
+2021-10-01 12:11:00,dog
+2021-10-01 12:13:00,owl
+
+
+create table t_wc(
+word varchar(20) not null,
+cnt int not null,
+primary key (word)
+);
+
+
+
+
+
+
+

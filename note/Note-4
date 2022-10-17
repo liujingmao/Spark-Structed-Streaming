@@ -1,0 +1,294 @@
+大数据处理过程：
+
+数据收集 ==> 某个地方 HDFS ==> 分布式数据的处理
+
+数据来源：
+	业务数据
+	爬虫数据
+	购买、合作...
+	用户产生采集过来的日志
+
+
+采集 vs 收集
+采集：生成  logfile
+收集：移动  把存放在各个日志服务器上的数据收集到HDFS
+
+
+
+
+Flume：
+	针对日志数据进行收集工具
+	把日志从A地方收集到B地方
+
+	Flume ==> HDFS ==> 离线处理
+	Flume ==> Kafka ==> 实时处理
+
+Flume版本
+	og 0.9
+	ng 现在业界使用的基本都是ng版本
+
+
+
+
+三大核心组件
+	Source
+		从哪收集？
+		avro、exec、kafka、spooling、taildir(*****)
+
+	Channel
+		数据存储池
+		memory
+		kafka
+		file
+
+	Sink
+		读取channel中的数据，写到目的地
+		HDFS、Logger、Kafka、HBase、Avro
+
+Flume-NG
+	Agent是Flume中最小的独立运行单位，对应一个JVM
+	Agent：Source、Channel、Sink组成
+
+
+监听44444端口上的数据 输出到logger
+
+a1: agent的名称
+# Name the components on this agent
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+# Describe/configure the source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = 0.0.0.0
+a1.sources.r1.port = 44444
+
+# Use a channel which buffers events in memory
+a1.channels.c1.type = memory
+
+# Describe the sink
+a1.sinks.k1.type = logger
+
+
+# Bind the source and sink to the channel
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+
+
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/example.conf \
+--name a1 \
+-Dflume.root.logger=INFO,console
+
+
+org.apache.flume.sink.LoggerSink.process(LoggerSink.java:95)] Event: { headers:{} body: 70 6B 0D                                        pk. }
+
+
+Event: 
+	是Flume数据传输的基本单元
+	以Event的形式将数据从源头传送到最终的目的地
+	由headers + body(byte array)来构成的
+
+
+
+某个文件 收集到 HDFS
+1）Agent选型
+	Source
+		exec
+		tail -F access.log
+	Channel
+		memory
+		file
+	Sink
+		hdfs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/flume-exec-hdfs.conf \
+--name exec-hdfs-agent \
+-Dflume.root.logger=INFO,console
+
+
+
+某个文件夹 收集到 HDFS
+1）Agent选型
+	Source
+		spooling-directory
+	Channel
+		memory
+		file
+	Sink
+		hdfs
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/taildir-memory-logger.conf \
+--name a1 \
+-Dflume.root.logger=INFO,console
+
+
+
+Agent
+	source 
+		netcat
+			imooc.com
+			imooc.com
+			gifshow.com
+			....
+
+	channel
+
+
+	sink
+
+
+Event： header +  body
+Interceptor：
+	Event：body  
+		contains("imooc.com")
+		header :  type=imooc
+		header :  type=other
+
+
+多Agent之间的通信：avro sink  (hostname+port)  avro source
+
+source 
+channel1  channel2
+avro-sink1     avro-sink2
+hadoop000+44445   hadoop000+44446
+
+avro-source    avro-source
+
+
+ 
+flume01.conf
+
+a1.sources = r1
+a1.sinks = k1 k2
+a1.channels = c1 c2
+
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 44444
+
+
+a1.sources.r1.interceptors = i1
+a1.sources.r1.interceptors.i1.type = com.imooc.bigdata.flume.DomainIntercepter$Builder
+
+a1.sources.r1.selector.type = multiplexing
+a1.sources.r1.selector.header = type
+a1.sources.r1.selector.mapping.imooc = c1
+a1.sources.r1.selector.mapping.other = c2
+
+a1.channels.c1.type = memory
+a1.channels.c2.type = memory
+
+
+
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = hadoop000
+a1.sinks.k1.port = 44445
+
+a1.sinks.k2.type = avro
+a1.sinks.k2.hostname = hadoop000
+a1.sinks.k2.port = 44446
+
+a1.sources.r1.channels = c1 c2
+a1.sinks.k1.channel = c1
+a1.sinks.k2.channel = c2
+
+
+flume02.conf
+a2.sources = r1
+a2.sinks = k1
+a2.channels = c1
+
+a2.sources.r1.type = avro
+a2.sources.r1.bind = hadoop000
+a2.sources.r1.port = 44445
+
+a2.channels.c1.type = memory
+
+a2.sinks.k1.type = logger
+
+
+a2.sources.r1.channels = c1
+a2.sinks.k1.channel = c1
+
+flume03.conf
+a3.sources = r1
+a3.sinks = k1
+a3.channels = c1
+
+a3.sources.r1.type = avro
+a3.sources.r1.bind = hadoop000
+a3.sources.r1.port = 44446
+
+a3.channels.c1.type = memory
+
+a3.sinks.k1.type = logger
+
+
+a3.sources.r1.channels = c1
+a3.sinks.k1.channel = c1
+
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/flume02.conf \
+--name a2 \
+-Dflume.root.logger=INFO,console
+
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/flume01.conf \
+--name a1 \
+-Dflume.root.logger=INFO,console
+
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/flume03.conf \
+--name a3 \
+-Dflume.root.logger=INFO,console
+
+
+
+
+flume-ng agent \
+--conf $FLUME_HOME/conf \
+--conf-file $FLUME_HOME/config/access-kafka.conf \
+--name a1 \
+-Dflume.root.logger=INFO,console
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

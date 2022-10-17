@@ -1,0 +1,62 @@
+
+大数据处理
+	离线/批
+	实时/流
+
+	source(输入) + transformation(处理)  +  sink(输出)
+
+
+
+
+
+./dev/make-distribution.sh \
+--name 2.6.0-cdh5.16.2 \
+--tgz  -Phive -Phive-thriftserver \
+-Pyarn 
+
+spark-3.0.0-bin-2.6.0-cdh5.16.2.tgz
+
+pom文件里添加仓库
+<repository>
+	<id>cloudera</id>
+	<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+</repository>
+
+
+
+bin/spark-submit --class org.apache.spark.examples.SparkPi \
+--master yarn \
+examples/jars/spark-examples*.jar \
+2
+
+spark-submit \
+--name pk-network-wc \
+--class com.imooc.bigdata.ss.NetworkWordCountAppYARN \
+--master yarn \
+/home/hadoop/lib/pk-ss-1.0.jar
+
+
+
+
+
+
+create table wc(
+word varchar(20),
+cnt int(10)
+);
+
+
+
+流/实时：谈谈你对Exactly-Once的看法
+
+
+
+
+
+
+
+
+
+
+
+

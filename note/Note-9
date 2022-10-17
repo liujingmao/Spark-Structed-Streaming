@@ -1,0 +1,93 @@
+
+
+清洗的目的是为了解决后续的统计需求
+
+每个【省份】【访问量】
+
+省份？  log是没有的 
+ip ==> 省份 城市 运营商....
+
+清洗: log(ip) ==> 省份
+统计: 累计操作  
+	==> Redis ?? SSS整合Redis进行操作
+
+
+
+
+
+Redis概述
+1) 数据库  
+	RDBMS
+	NoSQL
+
+k-v键值对的内存数据库
+k：字符串
+v：多种不同的数据类型
+	string
+	hash    ***** 
+	list
+	set
+	sorted set
+	...
+
+特性：
+	速度
+	持久化
+		RDB/AOF
+	多种数据类型
+	多种编程语言
+	主从、高可用、分布式
+
+sudo make
+sudo make install
+
+
+
+hash
+	字段  字段值
+
+
+key         value
+user:100  name  age 
+		   pk   30
+
+
+
+
+spark-submit \
+--master yarn \
+--name SSSApp \
+--class com.imooc.spark.sss.project.SSSApp \
+--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0  \
+--jars /home/hadoop/lib/jedis-2.9.3.jar,/home/hadoop/lib/ip2region-1.7.2.jar  \
+--files /home/hadoop/lib/ip2region.db \
+/home/hadoop/lib/pk-sss-1.0.jar
+
+files不要忘记
+==> 省份全是""
+
+
+
+
+
+
+
+
+1) Foreach and ForeachBatch
+	Foreach 
+	ForeachBatch
+
+	==> Redis
+	==> 处理结果可能需要吐给下游的Kafka
+
+2) offset
+3) checkpointLocation
+
+
+
+
+
+
+
+
+

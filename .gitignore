@@ -1,0 +1,11 @@
+target/
+.classpath
+.settings
+.project
+spark-warehouse
+pk-spark.iml
+*/*.iml
+*/*/*.iml
+src/main/resources/.DS_Store
+.idea
+out*

@@ -1,0 +1,42 @@
+server:
+  port: 9527
+  servlet:
+    context-path: /pk-web
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss} - %msg%n"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,28 @@
+技术选型
+	数据产生： SDK来完成，通过代码的方式来完成 
+	数据采集： Spring Boot来构建日志服务器
+	数据收集： Flume
+	数据交换/消息队列： Kafka
+	实时流处理： SS  SSS
+	结果存储： HBase  Redis
+	可视化： Echarts  React
+	Hadoop
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

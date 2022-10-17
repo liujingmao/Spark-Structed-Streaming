@@ -1,0 +1,445 @@
+
+
+流式处理中offset的使用
+
+自定义维护offset 
+	MySQL、HBase、ZK...
+
+MySQL为例进行讲解
+
+如何设计存储的表结构呢？
+topic  字符串
+partitions	数值  int
+groupid  字符串
+offset  数值  bigint/long
+
+
+create database offsets_storage;
+create table offsets_storage(
+topic varchar(32),
+groupid varchar(50),
+partitions int,
+offset bigint,
+primary key(topic,groupid,partitions)
+);
+
+insert into offsets_storage values("pktest","test-group",0,10);
+insert into offsets_storage values("pktest","test-group",1,11);
+insert into offsets_storage values("pktest","test-group",2,12);
+
+
+
+第一次：insert
+除了第一次之外： update
+
+MySQL： insert into ...   on duplicate key update ..
+
+
+insert into offsets_storage(topic,groupid,partitions,offset) values(?,?,?,?)
+on duplicate key update offset=?
+
+
+对于offset的管理 抽象成两个方法
+1) storeOffsets
+2） obtainOffsets
+
+==> 作业：自己把我们散落在应用程序中的offset的获取/保存的代码封装起来
+
+
+
+
+
+
+
+
+使用Spark Streaming来完成数据清洗功能
+	日志的含义
+
+	client==>logserver==>flume==>kafka
+
+	kafka:topic使用一个新的：access-topic-prod
+	kafka consumer:
+
+
+当天每小时用户访问时长的TopN
+	day hour user time
+	yyyyMMddHH
+
+
+
+HBase
+	NoSQL
+
+	Hadoop
+
+	N亿 ==> HBase
+
+
+o:name  o:字段名
+put 'user','3','o:name','test'
+put 'user','3','o:age','18'
+put 'user','3','o:sex','f'
+
+
+
+
+每天每个用户时长
+
+
+
+
+拓展:
+求用户的性别、年龄段的访问情况
+sex：日志是没有的
+年龄段： 日志也是没有的
+
+user： user1 user2
+
+用户库：用户的相关信息  <= 数据库
+	名字
+	性别
+	年龄
+	地市
+	...
+
+
+两种思路：
+1) 数据清洗时：就把相关的关联信息补充上
+	对于复杂、麻烦一些的信息补充或者拆分 都是放在源头处理完的
+2) 真正业务逻辑处理的地方 去补充所需要的信息
+
+
+
+序列化：对象转换成字节序列的过程
+反序列化：字节序列转换成对象的过程
+
+远程通信：网络进行数据的传输	
+数据持久化：
+
+Java：默认、通用
+	Serializable
+	慢、大
+Kryo：
+	快、小
+	并不能够支持所有的数据类型
+	手工进行注册
+	Access
+
+	硬编码：
+		conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+	(*****)通过配置传入：spark-submit .... --conf spark.serializer=org.apache.spark.serializer.KryoSerializer
+	配置文件：$SPAKR_HOME/conf/spark-defaults.conf
+
+	conf.registerKryoClasses(Array(classOf[Access], classOf[User]))
+
+
+
+
+
+
+
+process  == reciver
+
+5s
+
+job3  ...
+job2  5-9s   pending...
+job1  0-4s   <== data ==> 10s
+
+
+
+
+
+
+
+Kafka限速(*****)
+	Streaming X 
+	Flume ==> Kafka OK Kafka数据是不是堆积的越来越多 
+	restart StreamingApp
+	Streaming处理的数据陡增 ==> 
+		这个batch的数据量 >>>>>> 其他batch的数据量
+			==> 后续batch的数据来进来，但是第一个batch的数据还没处理完
+				==> pending....
+	Streaming对接Kafka数据时 做一个限速			
+
+	batch: 10s
+	maxRate: 100
+		kafka: 1partition: 10 * 1 * 100 = 1000条
+		kafka: 3partition: 10 * 3 * 100 = 3000条
+		Streaming UI ==> job  处理的数据量
+
+
+
+
+集群规划及部署
+
+数据量 ==> ......
+	每天、每小时、每个批次(记录数、大小)
+		每条记录有多少字段 
+		大小
+		高峰期、低峰期
+	增量 3%-5%
+
+Flume：channel=>FileChannel
+	7天： 7*每天的数据量 ==> Disk 
+
+Kafka： Topic=>Partition=>Disk
+	7天: 7*每天的数据量 * 副本系数  ==> Disk
+
+HDFS : ?*每天的数据量 * 副本系数
+	备份HDFS
+
+==> 扩展多少机器 
+
+Spark:
+	离线： DW： 分层  SQL on Hadoop  
+	实时： HBase(HDFS) 
+
+存储 + 计算所产生的结果 + 增量 + 阈值 + 备份  ==> 一年需要多大存储资源
+
+每个机器：CPU  Memory  Disk(挂载多个磁盘)
+	CPU：32Core  64Core
+	内存：516
+	磁盘：几十T
+	网络：万兆   交换机：多个机架
+==> 基于云厂商 
+
+
+
+集群部署
+	CM/CDH
+		一键式/傻瓜式部署
+	Ambari/HDP
+
+	Hadoop：
+		NN、RM   HA
+		DN、NM
+		ZK、JN   奇数个 3、5、7、9
+		JobHistoryServer 
+	Hive/Spark： on YARN   Gateway几个
+		仅仅就是一个客户端而已，并不需要集群
+		你想在哪个机器上提交作业	
+		Spark HistoryServer
+	HBase
+		HMaster HA
+		HRegionServer
+
+
+
+HBase
+	Google的三甲马车：GFS MapReduce Bigtable
+	开源实现
+	HDFS、MapReduce、HBase
+
+HBase逻辑模型
+	create 'user','o'
+	time
+
+RowKey: rk
+	HBase中的一个主键，比较复杂
+	检索、查询
+		单个、Range、全表扫描Scan
+
+列族：cf = column family  1-3  o
+	创建的时候需要指定cf
+列：一个列
+	创建的时候不需要指定column
+	o:name o:age
+
+时间戳：多版本 
+	
+Cell：
+	HBase中唯一确定的单元
+	rowkey + cf + column + version
+
+user:
+	basic: username password age 
+	other: work_address home_address....
+
+
+物理存储模型
+
+表：
+	行
+		rowkey + cfs(columns) + version
+
+	拆开：Region	
+	由多个Region构成
+
+	HMaster
+	HRegionServer
+		Region是由HMaster分配到不同的RegionServer
+		一个表拆成多Region之后被分配在不同的RS
+
+
+HMaster：
+	把Region分配到某一个RS上
+	某一个RS宕机了，Master会把这个机器上的Region迁移到其他的RS上去
+	对RS做负载均衡
+
+RS：
+	维护Master分配过来的Region
+	接收客户端过来的IO请求
+	负责运行过程中大的Region
+
+Region
+	每个Region由多个Store构成
+	每个Store里面保存一个cf
+	每个Store由一个MemStore和多个StoreFile构成
+	HBase：存储数据  put  puts ...  
+		加载大批量数据时：能否直接把数据转成HFile文件呢？
+
+HLog
+	WAL日志：write ahead log 预写日志
+	灾难恢复使用
+	记录了数据的变更
+
+HFile
+	HBase的数据最终是以HFile的形式存储在HDFS上的
+	HFile的形式/格式  有兴趣的可以自己查
+
+
+
+Region寻址机制
+	读写==>RS
+	client/代码  ?RS
+
+
+hbase:meta 
+rowkey：ns:table, region start key, region id
+
+regioninfo
+server
+
+
+user,,15970729380 column=info:regioninfo, timestamp=1598336202310, va
+ 93.91ae1d988a6936 lue={ENCODED => 91ae1d988a693641e8d3c017e25b4f5a, N
+ 41e8d3c017e25b4f5 AME => 'user,,1597072938093.91ae1d988a693641e8d3c01
+ a.                7e25b4f5a.', STARTKEY => '', ENDKEY => ''}         
+ user,,15970729380 column=info:seqnumDuringOpen, timestamp=15983362023
+ 93.91ae1d988a6936 10, value=\x00\x00\x00\x00\x00\x00\x00\x14         
+ 41e8d3c017e25b4f5                                                    
+ a.                                                                   
+ user,,15970729380 column=info:server, timestamp=1598336202310, value=
+ 93.91ae1d988a6936 hadoop000:60020                                    
+ 41e8d3c017e25b4f5                                                    
+ a.                                                                   
+ user,,15970729380 column=info:serverstartcode, timestamp=159833620231
+ 93.91ae1d988a6936 0, value=1598336184381                             
+ 41e8d3c017e25b4f5                                                    
+ a.   
+
+
+table region start   end    rs
+user   111          1000  hadoop000
+user   222   1000   2000  hadoop001
+user   333   2000         hadoop002
+
+
+HBase 写流程
+1) 到zk上获取到hbase:meta表所对应的rs节点
+2) client发起的写请求，meta
+	==>rs ==> 解析
+	==> WAL ==> Region (MemStore)
+				==> 阈值之后，异步的flush ==> HFile
+
+
+
+
+
+HBase读数据
+MemStore ==> BlockCache ==> HFile
+
+
+
+读写：三大步骤
+	ZK
+	Meta
+	RS
+
+
+
+
+
+
+
+spark-submit \
+--master yarn \
+--name StreamingApp \
+--class com.imooc.bigdata.project.stream.StreamingApp \
+--conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
+--packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.0.0 \
+--jars $(echo /home/hadoop/app/hbase-1.2.0-cdh5.16.2/lib/*.jar |tr ' ' ',') \
+/home/hadoop/lib/pk-ss-1.0.jar
+
+关于依赖的jar包问题
+1) 胖包： 所有的依赖都打包进去
+2) 瘦包： 
+
+
+
+
+
+1） offset
+	对接Kafka数据
+	原理  +  代码实现(offset存、取)
+
+2) 日志字段信息
+
+3) 数据清洗
+
+4）功能开发
+	不同维度的统计  1) 控制台  2) 存储到某个地方去
+	HBase：
+		逻辑模型
+		物理模型
+		架构(每个组件的职责)
+		读写流程
+		寻址机制	
+		rowkey设计原则
+5) 功能测试
+	本地测试
+	服务器测试：
+		jar
+		spark-submit
+			所依赖的jar包：--jars  --packages	
+6） 调优
+	序列化
+	Batch Interval
+	Kafka限速
+
+7) 集群规划
+	数据量角度  ==> 来年的计划
+	进程分布角度
+
+
+
+作业：
+	offset  
+	StreamingApp
+
+	StreamingApp(HBase) + offset(HBase)
+		对接Kafka数据时，createDirectStream(... offsets)
+		foreachRDD的时候把offsets存到HBase
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+jar包到群文件中获取
+
+mvn install:install-file \
+-Dfile=/Users/rocky/Desktop/log-generator-1.0.jar \
+-DgroupId=com.imooc.bigdata \
+-DartifactId=log-gen \
+-Dversion=1.0 \
+-Dpackaging=jar
+
+
